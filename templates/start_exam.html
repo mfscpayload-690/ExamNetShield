@@ -1,0 +1,35 @@
+<!-- templates/start_exam.html -->
+{% extends "base.html" %}
+
+{% block title %}Start Exam - Exam Management{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Start Exam & Allocate Questions</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="exam_id" class="form-label">Select Exam</label>
+                        <select class="form-select" id="exam_id" name="exam_id" required>
+                            <option value="" selected disabled>Choose an exam...</option>
+                            {% for exam in exams %}
+                                <option value="{{ exam.id }}">{{ exam.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="alert alert-warning">
+                        <strong>Note:</strong> This will randomly allocate questions to all registered students.
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Start Exam and Allocate Questions</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

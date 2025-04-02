@@ -1,0 +1,40 @@
+<!-- templates/create_exam.html -->
+{% extends "base.html" %}
+
+{% block title %}Create Exam - Exam Management{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Create New Exam</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Exam Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Duration (hours)</label>
+                        <input type="number" step="0.5" class="form-control" id="duration" name="duration" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reg_prefix" class="form-label">Registration Number Prefix</label>
+                        <input type="text" class="form-control" id="reg_prefix" name="reg_prefix" placeholder="e.g., CS" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reg_range" class="form-label">Registration Number Range</label>
+                        <input type="text" class="form-control" id="reg_range" name="reg_range" placeholder="e.g., 1-10" required>
+                        <div class="form-text">Format: start-end (e.g., 1-10)</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Create Exam</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
