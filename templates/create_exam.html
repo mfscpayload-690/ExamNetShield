@@ -48,7 +48,9 @@
                     <ul class="list-group">
                         {% for exam in exams %}
                             <li class="list-group-item">
-                                <strong>{{ exam.name }}</strong> - Duration: {{ exam.duration }} hours
+                                <a href="{{ url_for('exam_details', exam_id=exam.id) }}" class="text-decoration-none">
+                                    <strong>{{ exam.name }}</strong> - Duration: {{ exam.duration }} hours
+                                </a>
                                 <br>
                                 Started: {{ exam.is_started }}
                                 <br>

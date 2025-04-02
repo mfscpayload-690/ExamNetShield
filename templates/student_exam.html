@@ -16,16 +16,11 @@
             </div>
             <div class="card-body">
                 <h5>Assigned Question:</h5>
-                <ul>
-                    {% for question in questions %}
-                        <li>{{ question }}</li>
-                    {% endfor %}
-                </ul>
+                <p>{{ questions }}</p>
                 <hr>
                 <div id="timer" class="alert alert-info text-center">
-                    Time Remaining: <span id="time-remaining">{{ exam.duration * 60 * 60 }}</span> seconds
+                    Time Remaining: <span id="time-remaining">{{ exam.duration * 60 }}</span> minutes
                 </div>
-                <button id="start-timer" class="btn btn-primary">Start Timer</button>
                 <hr>
                 <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
@@ -40,22 +35,38 @@
 </div>
 
 <script>
-    document.getElementById('start-timer').addEventListener('click', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
         const timerElement = document.getElementById('time-remaining');
-        let timeRemaining = parseInt(timerElement.textContent);
 
-        const interval = setInterval(() => {
-            if (timeRemaining <= 0) {
-                clearInterval(interval);
-                alert('Time is up!');
-                timerElement.textContent = '0';
-            } else {
-                timeRemaining -= 1;
-                timerElement.textContent = timeRemaining;
-            }
-        }, 1000);
+        try {
+            const response = await fetch('/exam/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ student_id: "{{ student.id }}", exam_id: "{{ exam.id }}" }),
+            });
 
-        this.disabled = true; // Disable the button after starting the timer
+            const data = await response.json();
+            let timeRemaining = Math.floor(data.remaining_time / 60); // Convert seconds to minutes
+
+            // Update the timer element
+            timerElement.textContent = timeRemaining;
+
+            // Start the timer
+            const interval = setInterval(() => {
+                if (timeRemaining <= 0) {
+                    clearInterval(interval);
+                    alert('Time is up!');
+                    timerElement.textContent = '0';
+                } else {
+                    timeRemaining -= 1;
+                    timerElement.textContent = timeRemaining;
+                }
+            }, 60000); // Update every minute
+        } catch (err) {
+            console.error('Error fetching remaining time:', err);
+        }
     });
 </script>
 {% endblock %}

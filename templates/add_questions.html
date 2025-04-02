@@ -1,60 +1,42 @@
 {% extends "base.html" %}
 
-{% block title %}Add Questions - Exam Management{% endblock %}
+{% block title %}Add Questions - {{ exam.name }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Add Questions for Exam: {{ exam.name }}</h2>
-    
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Add New Question</h4>
+<div class="container mt-4">
+    <h1 class="text-center">Add Questions for {{ exam.name }}</h1>
+    <p class="text-center">Duration: {{ exam.duration }} hours</p>
+    <hr>
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="question_number" class="form-label">Question Number</label>
+            <input type="text" class="form-control" id="question_number" name="question_number" required>
         </div>
-        <div class="card-body">
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="question_number" class="form-label">Question Number</label>
-                    <input type="number" class="form-control" id="question_number" name="question_number" required>
-                </div>
-                <div class="mb-3">
-                    <label for="question_text" class="form-label">Question Text</label>
-                    <textarea class="form-control" id="question_text" name="question_text" rows="3" required></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Add Question</button>
-            </form>
+        <div class="mb-3">
+            <label for="question_text" class="form-label">Question Text</label>
+            <textarea class="form-control" id="question_text" name="question_text" rows="3" required></textarea>
         </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header">
-            <h4>Existing Questions</h4>
-        </div>
-        <div class="card-body">
-            {% if questions %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Question Number</th>
-                            <th>Question Text</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for question in questions %}
-                            <tr>
-                                <td>{{ question.question_number }}</td>
-                                <td>{{ question.question_text }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p class="text-muted">No questions added yet.</p>
-            {% endif %}
-        </div>
-    </div>
-    
-    <div class="mt-4">
-        <a href="{{ url_for('create_exam') }}" class="btn btn-secondary">Back to Exam Creation</a>
-    </div>
+        <button type="submit" class="btn btn-primary">Add Question</button>
+    </form>
+
+    <hr>
+
+    <h4>Existing Questions</h4>
+    <ul class="list-group">
+        {% for question in questions %}
+        <li class="list-group-item">
+            <strong>Q{{ question.question_number }}:</strong> {{ question.question_text }}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <hr>
+
+    <!-- Start Exam Button -->
+    <form method="POST" action="{{ url_for('start_exam') }}">
+        <input type="hidden" name="exam_id" value="{{ exam.id }}">
+        <button type="submit" class="btn btn-success">Start Exam</button>
+    </form>
 </div>
 {% endblock %}

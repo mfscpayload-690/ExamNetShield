@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Details - {{ exam.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center">Exam Details</h1>
+    <h3 class="text-center">{{ exam.name }}</h3>
+    <p class="text-center">Duration: {{ exam.duration }} hours</p>
+    <hr>
+
+    <h4>Students List</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Registration Number</th>
+                <th>IP Address</th>
+                <th>Allocated Question</th>
+                <th>Submission Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.registration_number }}</td>
+                <td>{{ student.ip_address or "Not Registered" }}</td>
+                <td>{{ student.allocated_question }}</td>
+                <td>
+                    {% if student.is_submitted %}
+                    <span class="badge bg-success">Submitted</span>
+                    {% else %}
+                    <span class="badge bg-danger">Not Submitted</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if student.is_submitted %}
+                    <a href="{{ url_for('preview_answer', file_path=student.submitted_file) }}" class="btn btn-primary btn-sm">Preview Answer</a>
+                    {% else %}
+                    <button class="btn btn-secondary btn-sm" disabled>No Submission</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

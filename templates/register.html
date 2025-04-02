@@ -14,6 +14,19 @@
                 <h3 class="text-center">Student Registration</h3>
             </div>
             <div class="card-body">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Registration Form -->
                 <form method="POST">
                     <div class="mb-3">
                         <label for="reg_number" class="form-label">Registration Number</label>
