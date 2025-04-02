@@ -1,4 +1,3 @@
-<!-- templates/create_exam.html -->
 {% extends "base.html" %}
 
 {% block title %}Create Exam - Exam Management{% endblock %}
@@ -33,6 +32,35 @@
                         <button type="submit" class="btn btn-primary">Create Exam</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="text-center">Ongoing Exams</h4>
+            </div>
+            <div class="card-body">
+                {% if exams %}
+                    <ul class="list-group">
+                        {% for exam in exams %}
+                            <li class="list-group-item">
+                                <strong>{{ exam.name }}</strong> - Duration: {{ exam.duration }} hours
+                                <br>
+                                Started: {{ exam.is_started }}
+                                <br>
+                                Ended: {{ exam.is_ended }}
+                                <br>
+                                Participants: {{ exam.reg_number_prefix }} {{ exam.reg_number_range }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted text-center">No ongoing exams available.</p>
+                {% endif %}
             </div>
         </div>
     </div>

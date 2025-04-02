@@ -8,6 +8,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///exams.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 
 db.init_app(app)
 
@@ -52,10 +53,10 @@ def create_exam():
             start, end = map(int, reg_range.split('-'))
             if start >= end:
                 flash('Range start must be less than end', 'danger')
-                return render_template('create_exam.html')
+                return render_template('create_exam.html', exams=Exam.query.all())
         except ValueError:
             flash('Invalid range format. Use start-end (e.g., 1-10)', 'danger')
-            return render_template('create_exam.html')
+            return render_template('create_exam.html', exams=Exam.query.all())
             
         # Create exam
         new_exam = Exam(
@@ -80,7 +81,9 @@ def create_exam():
         flash(f'Exam "{name}" created with {end-start+1} students!', 'success')
         return redirect(url_for('add_questions', exam_id=new_exam.id))
         
-    return render_template('create_exam.html')
+    # Pass all ongoing exams to the template
+    exams = Exam.query.all()
+    return render_template('create_exam.html', exams=exams)
 
 @app.route('/add_questions/<int:exam_id>', methods=['GET', 'POST'])
 def add_questions(exam_id):
@@ -150,6 +153,7 @@ def register():
                     student.ip_address = current_ip
                     db.session.commit()
                 flash('Registration successful!', 'success')
+                return redirect(url_for('student_exam', student_id=student.id))
         else:
             flash('Invalid registration number or exam ID!', 'danger')
     exams = Exam.query.all()
@@ -173,7 +177,8 @@ def start_exam():
             
         # Get all students for this exam
         students = Student.query.filter_by(exam_id=exam_id).all()
-        
+        exam = Exam.query.get(exam_id)
+        exam.is_started = True
         # Prepare question texts for random allocation
         question_texts = [q.question_text for q in exam_questions]
         
@@ -191,6 +196,26 @@ def start_exam():
         
     exams = Exam.query.all()
     return render_template('start_exam.html', exams=exams)
+
+@app.route('/student_exam/<int:student_id>', methods=['GET', 'POST'])
+def student_exam(student_id):
+    student = Student.query.get_or_404(student_id)
+    exam = Exam.query.get_or_404(student.exam_id)
+
+    if request.method == 'POST':
+        # Handle file upload
+        uploaded_file = request.files.get('answer_file')
+        if uploaded_file and uploaded_file.filename != '':
+            # Save the file (you can customize the save location)
+            file_path = os.path.join('uploads', uploaded_file.filename)
+            uploaded_file.save(file_path)
+            flash('Answer submitted successfully!', 'success')
+        else:
+            flash('Please upload a valid file!', 'danger')
+
+    # Get the student's assigned questions
+    questions = student.get_questions()
+    return render_template('student_exam.html', student=student, exam=exam, questions=questions)
 
 if __name__ == '__main__':
     app.run(debug=True)
