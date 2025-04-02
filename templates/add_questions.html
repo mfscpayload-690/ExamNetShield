@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Add Questions - Exam Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Add Questions for Exam: {{ exam.name }}</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Add New Question</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="question_number" class="form-label">Question Number</label>
+                    <input type="number" class="form-control" id="question_number" name="question_number" required>
+                </div>
+                <div class="mb-3">
+                    <label for="question_text" class="form-label">Question Text</label>
+                    <textarea class="form-control" id="question_text" name="question_text" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Question</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h4>Existing Questions</h4>
+        </div>
+        <div class="card-body">
+            {% if questions %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Question Number</th>
+                            <th>Question Text</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for question in questions %}
+                            <tr>
+                                <td>{{ question.question_number }}</td>
+                                <td>{{ question.question_text }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted">No questions added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('create_exam') }}" class="btn btn-secondary">Back to Exam Creation</a>
+    </div>
+</div>
+{% endblock %}

@@ -27,3 +27,9 @@ class Student(db.Model):
         if self.allocated_questions:
             return json.loads(self.allocated_questions)
         return []
+
+class Question(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question_number = db.Column(db.Integer, nullable=False)
+    question_text = db.Column(db.Text, nullable=False)
+    exam_id = db.Column(db.Integer, db.ForeignKey('exam.id'), nullable=False)
