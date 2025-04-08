@@ -28,8 +28,8 @@ class Student(db.Model):
     allocated_questions = db.Column(db.String(255), nullable=True)  # Single question as a string
     submitted_file = db.Column(db.String(255), nullable=True)
 
-    def set_question(self, question):
-        self.allocated_questions = question
+    def set_question(self, question_text):
+        self.allocated_questions = question_text
         db.session.commit()
     def get_question(self):
         return self.allocated_questions 

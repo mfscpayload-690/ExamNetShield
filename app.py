@@ -18,6 +18,42 @@ with app.app_context():
     db.create_all()
 
 
+from collections import defaultdict
+
+def distribute_questions(num_people, questions):
+    """
+    Distribute questions among students such that:
+    - Each student gets one question.
+    - Questions are distributed as evenly as possible.
+    - No two adjacent students get the same question.
+    """
+    min_per_question = num_people // len(questions)
+    result = [None] * num_people
+    question_count = defaultdict(int)
+
+    for i in range(num_people):
+        available = []
+        for q in questions:
+            # Ensure the question is not the same as the previous student's question
+            adjacent_ok = i == 0 or q != result[i - 1]
+            # Ensure the question is distributed evenly
+            distribution_ok = question_count[q] < min_per_question or (
+                all(question_count[other] >= min_per_question for other in questions)
+            )
+            if adjacent_ok and distribution_ok:
+                available.append(q)
+
+        if not available:
+            # Restart the distribution if no valid question is available
+            return distribute_questions(num_people, questions)
+
+        # Randomly select a question from the available options
+        selected = random.choice(available)
+        result[i] = selected
+        question_count[selected] += 1
+
+    return result
+
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -187,21 +223,24 @@ def start_exam():
         students = Student.query.filter_by(exam_id=exam_id).all()
         exam = Exam.query.get(exam_id)
         exam.is_started = True
+
         # Prepare question texts for random allocation
         question_texts = [q.question_text for q in exam_questions]
-        
-        # Assign random questions to each student
-        for student in students:
-            selected_question = random.choice(question_texts)
-            student.set_question(selected_question)
+        num_students = len(students)
+
+        # Use the custom function to distribute questions
+        distributed_questions = distribute_questions(num_students, question_texts)
+        print(distributed_questions)
+        # Assign questions to students
+        for student, question in zip(students, distributed_questions):
+            student.set_question(question)
               
         db.session.commit()
         flash(f'Exam "{exam.name}" started and questions allocated to {len(students)} students!', 'success')
         return redirect(url_for('exam_details', exam_id=exam_id))
         
     exams = Exam.query.all()
-    return render_template('start_exam.html', exams=exams)
-    
+    return render_template('start_exam.html', exams=exams)  
 @app.route('/student_exam/<int:student_id>', methods=['GET', 'POST'])
 def student_exam(student_id):
     student = Student.query.get_or_404(student_id)
@@ -280,7 +319,6 @@ def preview_answer(file_path):
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))
         # Safely join the base directory with the requested file path
         full_path = safe_join(base_dir, file_path)
-        print(f"Full path: {full_path}")
 
         # Check if the file exists
         if not os.path.exists(full_path) or not os.path.isfile(full_path):
@@ -334,7 +372,6 @@ def exam_details(exam_id):
             'submitted_file': submitted_file  # Use the processed value
         })
 
-    print(student_data)
     return render_template('exam_details.html', exam=exam, students=student_data)
 
 if __name__ == '__main__':
