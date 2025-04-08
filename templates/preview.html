@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Answer - {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Preview: {{ filename }}</h3>
+    <div class="card">
+        <div class="card-body">
+            <pre class="code-preview">{{ content }}</pre>
+        </div>
+    </div>
+    <a href="javascript:history.back()" class="btn btn-secondary mt-3">Back</a>
+</div>
+{% endblock %}

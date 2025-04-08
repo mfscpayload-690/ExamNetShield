@@ -1,5 +1,6 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify , abort, send_file, safe_join
+
 from models import *
 import random
 import os
@@ -264,6 +265,47 @@ def start_exam_student():
     return jsonify({'remaining_time': remaining_time})
 
 
+
+@app.route('/preview_answer/<path:file_path>')
+def preview_answer(file_path):
+    """
+    Serve the file for preview or download.
+    """
+    try:
+        # Ensure file_path is not absolute
+        if os.path.isabs(file_path):
+            abort(400, "Invalid file path")
+
+        # Base directory where submissions are stored
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))
+        # Safely join the base directory with the requested file path
+        full_path = safe_join(base_dir, file_path)
+        print(f"Full path: {full_path}")
+
+        # Check if the file exists
+        if not os.path.exists(full_path) or not os.path.isfile(full_path):
+            abort(404)  # File not found
+
+        # Check if the request is for preview or download
+        if request.args.get('download') == 'true':
+            # Serve the file as a download
+            return send_file(full_path, as_attachment=True)
+
+        # Serve the file content for preview (only for text files)
+        text_extensions = ['.txt', '.py', '.html', '.css', '.js', '.json', '.md']
+        _, ext = os.path.splitext(full_path)
+        if ext.lower() in text_extensions:
+            with open(full_path, 'r') as f:
+                content = f.read()
+            return content, 200, {'Content-Type': 'text/plain'}
+
+        # If the file is not a text file, return an error
+        return "Preview not supported for this file type.", 400
+
+    except (ValueError, TypeError):
+        abort(404)  # Invalid file path
+        
+
 @app.route('/exam/<int:exam_id>', methods=['GET'])
 def exam_details(exam_id):
     # Fetch the exam details
@@ -277,14 +319,22 @@ def exam_details(exam_id):
     for student in students:
         allocated_question = student.allocated_questions  # Single question as a string
         submission_status = bool(student.submitted_file)  # Check if the student has submitted a file
+
+        # Handle the case where submitted_file is None
+        if student.submitted_file:
+            submitted_file = os.path.relpath(student.submitted_file, app.config['UPLOAD_FOLDER'])
+        else:
+            submitted_file = None  # Or set to an empty string ""
+
         student_data.append({
             'registration_number': student.registration_number,
             'ip_address': student.ip_address,
             'allocated_question': allocated_question,
             'is_submitted': submission_status,
-            'submitted_file': student.submitted_file  # Path to the submitted file
+            'submitted_file': submitted_file  # Use the processed value
         })
 
+    print(student_data)
     return render_template('exam_details.html', exam=exam, students=student_data)
 
 if __name__ == '__main__':

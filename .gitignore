@@ -36,4 +36,4 @@ instance/
 .DS_Store
 Thumbs.db
 
-upload/
+uploads/
