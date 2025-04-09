@@ -2,8 +2,18 @@
 from flask_sqlalchemy import SQLAlchemy
 import json
 from datetime import datetime
+from werkzeug.security import generate_password_hash
 
 db = SQLAlchemy()
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = generate_password_hash(password)
 
 class Exam(db.Model):
 

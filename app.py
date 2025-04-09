@@ -1,6 +1,6 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify , abort, send_file, safe_join
-
+from werkzeug.security import check_password_hash
 from models import *
 import random
 import os
@@ -58,20 +58,23 @@ def distribute_questions(num_people, questions):
 def index():
     return redirect(url_for('login'))
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
-        # Simple authentication (in a real app, check against database)
-        if username == 'admin' and password == 'password':
+
+        # Authenticate against the User table
+        user = User.query.filter_by(username=username).first()
+
+        if user and check_password_hash(user.password, password):
             session['logged_in'] = True
             flash('Login successful!', 'success')
             return redirect(url_for('create_exam'))
         else:
             flash('Invalid credentials!', 'danger')
-            
+
     return render_template('login.html')
 
 @app.route('/create_exam', methods=['GET', 'POST'])
@@ -174,7 +177,11 @@ def register():
         reg_number = request.form.get('reg_number')
         exam_id = request.form.get('exam_id')
         current_ip = request.remote_addr
-
+        exam = Exam.query.get_or_404(exam_id)
+        # chexk exam is ended
+        if exam.is_ended:
+            flash('The exam has ended. Registration is not allowed.', 'danger')
+            return redirect(url_for('register'))
         # Find the student
         student = Student.query.filter_by(
             registration_number=reg_number,
@@ -202,6 +209,22 @@ def register():
 
     exams = Exam.query.all()
     return render_template('register.html', exams=exams)
+
+@app.route('/stop_exam', methods=['POST'])
+def stop_exam():
+    if not session.get('logged_in'):
+        flash('Please login first!', 'warning')
+        return redirect(url_for('login'))
+
+    exam_id = request.form.get('exam_id')
+    exam = Exam.query.get_or_404(exam_id)
+    
+    # Mark the exam as ended
+    exam.is_ended = True
+    db.session.commit()
+    
+    flash(f'Exam "{exam.name}" has been stopped!', 'success')
+    return redirect(url_for('exam_details', exam_id=exam_id))
 
 @app.route('/start_exam', methods=['GET', 'POST'])
 def start_exam():
@@ -250,7 +273,11 @@ def student_exam(student_id):
     if student.submitted_file:
         flash('You have already submitted your answer. Further edits are not allowed.', 'warning')
         return redirect(url_for('register'))  # Redirect to login or another appropriate page
-
+    # Check if the exam has ended
+    if exam.is_ended:
+        flash('The exam has ended.', 'danger')
+        return redirect(url_for('register'))
+    # Check if the exam has started
     if request.method == 'POST':
         # Handle file upload
         uploaded_file = request.files.get('answer_file')
@@ -279,7 +306,10 @@ def start_exam_student():
     data = request.get_json()
     student_id = data.get('student_id')
     exam_id = data.get('exam_id')
-
+    exam = Exam.query.get_or_404(exam_id)
+    # Check if the exam has Ended
+    if exam.is_ended:
+        return jsonify({'error': 'The exam has ended.'}), 400
     # Check if the session already exists
     session = ExamSession.query.filter_by(student_id=student_id, exam_id=exam_id).first()
 
