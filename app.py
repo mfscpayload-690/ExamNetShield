@@ -1,18 +1,34 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify , abort, send_file, safe_join
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort, send_file, safe_join
 from werkzeug.security import check_password_hash
+from dotenv import load_dotenv
 from models import *
+from config import config
+from utils import secure_file_upload, validate_registration_range
 import random
 import os
 from datetime import datetime, timedelta
+import logging
 
+# Load environment variables
+load_dotenv()
+
+# Create Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///exams.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 
+# Load configuration
+env = os.environ.get('FLASK_ENV', 'development')
+app.config.from_object(config.get(env, config['default']))
+
+# Initialize database
 db.init_app(app)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 with app.app_context():
     db.create_all()
@@ -26,10 +42,26 @@ def distribute_questions(num_people, questions):
     - Each student gets one question.
     - Questions are distributed as evenly as possible.
     - No two adjacent students get the same question.
+    
+    Args:
+        num_people (int): Number of students
+        questions (list): List of question texts
+        
+    Returns:
+        list: List of questions assigned to each student
     """
+    if not questions or num_people <= 0:
+        return []
+    
+    # If only one question, everyone gets the same one
+    if len(questions) == 1:
+        return [questions[0]] * num_people
+    
     min_per_question = num_people // len(questions)
     result = [None] * num_people
     question_count = defaultdict(int)
+    max_attempts = num_people * 10  # Prevent infinite recursion
+    attempts = 0
 
     for i in range(num_people):
         available = []
@@ -44,9 +76,13 @@ def distribute_questions(num_people, questions):
                 available.append(q)
 
         if not available:
-            # Restart the distribution if no valid question is available
-            return distribute_questions(num_people, questions)
-
+            # Fallback: if no valid question is available, use any question except the previous one
+            available = [q for q in questions if i == 0 or q != result[i - 1]]
+            
+        if not available:
+            # Last resort: use any question
+            available = questions
+            
         # Randomly select a question from the available options
         selected = random.choice(available)
         result[i] = selected
@@ -61,73 +97,120 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Handle user login."""
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        # Validate inputs
+        if not username or not password:
+            flash('Username and password are required!', 'danger')
+            return render_template('login.html')
 
         # Authenticate against the User table
-        user = User.query.filter_by(username=username).first()
+        try:
+            user = User.query.filter_by(username=username).first()
 
-        if user and check_password_hash(user.password, password):
-            session['logged_in'] = True
-            flash('Login successful!', 'success')
-            return redirect(url_for('create_exam'))
-        else:
-            flash('Invalid credentials!', 'danger')
+            if user and check_password_hash(user.password, password):
+                session['logged_in'] = True
+                session['username'] = username
+                session.permanent = True
+                logger.info(f'User {username} logged in successfully')
+                flash('Login successful!', 'success')
+                return redirect(url_for('create_exam'))
+            else:
+                logger.warning(f'Failed login attempt for username: {username}')
+                flash('Invalid credentials!', 'danger')
+        except Exception as e:
+            logger.error(f'Error during login: {str(e)}')
+            flash('An error occurred during login. Please try again.', 'danger')
 
     return render_template('login.html')
 
+@app.route('/logout')
+def logout():
+    """Handle user logout."""
+    username = session.get('username', 'Unknown')
+    session.clear()
+    logger.info(f'User {username} logged out')
+    flash('You have been logged out successfully.', 'info')
+    return redirect(url_for('login'))
+
 @app.route('/create_exam', methods=['GET', 'POST'])
 def create_exam():
+    """Create a new exam."""
     if not session.get('logged_in'):
         flash('Please login first!', 'warning')
         return redirect(url_for('login'))
         
     if request.method == 'POST':
-        name = request.form.get('name')
-        duration = float(request.form.get('duration'))
-        reg_prefix = request.form.get('reg_prefix')
-        reg_range = request.form.get('reg_range')
+        name = request.form.get('name', '').strip()
+        duration_str = request.form.get('duration', '').strip()
+        reg_prefix = request.form.get('reg_prefix', '').strip()
+        reg_range = request.form.get('reg_range', '').strip()
         
         # Validate inputs
+        if not all([name, duration_str, reg_prefix, reg_range]):
+            flash('All fields are required!', 'danger')
+            return render_template('create_exam.html', exams=Exam.query.all())
+        
         try:
-            start, end = map(int, reg_range.split('-'))
-            if start >= end:
-                flash('Range start must be less than end', 'danger')
+            duration = float(duration_str)
+            if duration <= 0 or duration > 24:
+                flash('Duration must be between 0 and 24 hours', 'danger')
                 return render_template('create_exam.html', exams=Exam.query.all())
         except ValueError:
-            flash('Invalid range format. Use start-end (e.g., 1-10)', 'danger')
+            flash('Invalid duration format', 'danger')
+            return render_template('create_exam.html', exams=Exam.query.all())
+        
+        # Validate registration range
+        success, start, end, error = validate_registration_range(reg_range)
+        if not success:
+            flash(error, 'danger')
             return render_template('create_exam.html', exams=Exam.query.all())
             
         # Create exam
-        new_exam = Exam(
-            name=name,
-            duration=duration,
-            reg_number_prefix=reg_prefix,
-            reg_number_range=reg_range
-        )
-        db.session.add(new_exam)
-        db.session.flush()  # Get the ID without committing
-        
-        # Create students for the range
-        for i in range(start, end + 1):
-            reg_number = f"{reg_prefix}{i:03d}" 
-            student = Student(
-                registration_number=reg_number,
-                exam_id=new_exam.id
+        try:
+            new_exam = Exam(
+                name=name,
+                duration=duration,
+                reg_number_prefix=reg_prefix,
+                reg_number_range=reg_range
             )
-            db.session.add(student)
+            db.session.add(new_exam)
+            db.session.flush()  # Get the ID without committing
             
-        db.session.commit()
-        flash(f'Exam "{name}" created with {end-start+1} students!', 'success')
-        return redirect(url_for('add_questions', exam_id=new_exam.id))
+            # Create students for the range
+            for i in range(start, end + 1):
+                reg_number = f"{reg_prefix}{i:03d}" 
+                student = Student(
+                    registration_number=reg_number,
+                    exam_id=new_exam.id
+                )
+                db.session.add(student)
+                
+            db.session.commit()
+            logger.info(f'Exam "{name}" created with {end-start+1} students by user {session.get("username")}')
+            flash(f'Exam "{name}" created with {end-start+1} students!', 'success')
+            return redirect(url_for('add_questions', exam_id=new_exam.id))
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f'Error creating exam: {str(e)}')
+            flash('An error occurred while creating the exam. Please try again.', 'danger')
         
     # Pass all ongoing exams to the template
-    exams = Exam.query.all()
+    try:
+        exams = Exam.query.all()
+    except Exception as e:
+        logger.error(f'Error fetching exams: {str(e)}')
+        exams = []
+        flash('Error loading exams', 'warning')
+        
     return render_template('create_exam.html', exams=exams)
 
 @app.route('/add_questions/<int:exam_id>', methods=['GET', 'POST'])
 def add_questions(exam_id):
+    """Add questions to an exam."""
     if not session.get('logged_in'):
         flash('Please login first!', 'warning')
         return redirect(url_for('login'))
@@ -135,8 +218,8 @@ def add_questions(exam_id):
     exam = Exam.query.get_or_404(exam_id)
     
     if request.method == 'POST':
-        question_number = request.form.get('question_number')
-        question_text = request.form.get('question_text')
+        question_number = request.form.get('question_number', '').strip()
+        question_text = request.form.get('question_text', '').strip()
         
         # Validate inputs
         if not question_number or not question_text:
@@ -146,28 +229,43 @@ def add_questions(exam_id):
                 # Convert question_number to integer
                 q_num = int(question_number)
                 
-                # Check if this question number already exists for this exam
-                existing_question = Question.query.filter_by(
-                    exam_id=exam_id, 
-                    question_number=q_num
-                ).first()
-                
-                if existing_question:
-                    flash(f'Question number {q_num} already exists for this exam!', 'danger')
+                if q_num <= 0:
+                    flash('Question number must be positive!', 'danger')
+                elif len(question_text) > 5000:
+                    flash('Question text is too long (max 5000 characters)!', 'danger')
                 else:
-                    new_question = Question(
-                        question_number=q_num,
-                        question_text=question_text,
-                        exam_id=exam_id
-                    )
-                    db.session.add(new_question)
-                    db.session.commit()
-                    flash('Question added successfully!', 'success')
+                    # Check if this question number already exists for this exam
+                    existing_question = Question.query.filter_by(
+                        exam_id=exam_id, 
+                        question_number=q_num
+                    ).first()
+                    
+                    if existing_question:
+                        flash(f'Question number {q_num} already exists for this exam!', 'danger')
+                    else:
+                        new_question = Question(
+                            question_number=q_num,
+                            question_text=question_text,
+                            exam_id=exam_id
+                        )
+                        db.session.add(new_question)
+                        db.session.commit()
+                        logger.info(f'Question {q_num} added to exam {exam_id} by user {session.get("username")}')
+                        flash('Question added successfully!', 'success')
             except ValueError:
                 flash('Question number must be an integer!', 'danger')
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f'Error adding question: {str(e)}')
+                flash('An error occurred while adding the question.', 'danger')
         
     # Get all questions for this exam
-    questions = Question.query.filter_by(exam_id=exam_id).order_by(Question.question_number).all()
+    try:
+        questions = Question.query.filter_by(exam_id=exam_id).order_by(Question.question_number).all()
+    except Exception as e:
+        logger.error(f'Error fetching questions: {str(e)}')
+        questions = []
+        flash('Error loading questions', 'warning')
     
     return render_template('add_questions.html', exam=exam, questions=questions)
 
@@ -266,36 +364,46 @@ def start_exam():
     return render_template('start_exam.html', exams=exams)  
 @app.route('/student_exam/<int:student_id>', methods=['GET', 'POST'])
 def student_exam(student_id):
+    """Handle student exam interface and submission."""
     student = Student.query.get_or_404(student_id)
     exam = Exam.query.get_or_404(student.exam_id)
 
     # Check if the student session is already closed
     if student.submitted_file:
         flash('You have already submitted your answer. Further edits are not allowed.', 'warning')
-        return redirect(url_for('register'))  # Redirect to login or another appropriate page
+        return redirect(url_for('register'))
+        
     # Check if the exam has ended
     if exam.is_ended:
         flash('The exam has ended.', 'danger')
         return redirect(url_for('register'))
-    # Check if the exam has started
+        
+    # Handle file upload
     if request.method == 'POST':
-        # Handle file upload
         uploaded_file = request.files.get('answer_file')
-        if uploaded_file and uploaded_file.filename != '':
+        
+        if not uploaded_file or uploaded_file.filename == '':
+            flash('Please upload a valid file!', 'danger')
+        else:
             # Save the file in a directory structure: uploads/exam_id/registration_number/
             upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(exam.id), student.registration_number)
-            os.makedirs(upload_folder, exist_ok=True)  # Ensure the directory exists
-            file_path = os.path.join(upload_folder, uploaded_file.filename)
-            uploaded_file.save(file_path)
-
-            # Mark the student's session as closed
-            student.submitted_file = file_path
-            db.session.commit()
-
-            flash('Answer submitted successfully! You cannot make further changes.', 'success')
-            return redirect(url_for('register'))  # Redirect to login or another appropriate page
-        else:
-            flash('Please upload a valid file!', 'danger')
+            
+            success, file_path, error = secure_file_upload(uploaded_file, upload_folder)
+            
+            if success:
+                try:
+                    # Mark the student's session as closed
+                    student.submitted_file = file_path
+                    db.session.commit()
+                    logger.info(f'Student {student.registration_number} submitted file for exam {exam.id}')
+                    flash('Answer submitted successfully! You cannot make further changes.', 'success')
+                    return redirect(url_for('register'))
+                except Exception as e:
+                    db.session.rollback()
+                    logger.error(f'Error saving submission: {str(e)}')
+                    flash('An error occurred while saving your submission.', 'danger')
+            else:
+                flash(error, 'danger')
 
     # Get the student's assigned question
     questions = student.get_question()

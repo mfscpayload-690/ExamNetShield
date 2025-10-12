@@ -27,13 +27,24 @@ instance/
 
 # Pytest cache
 .pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
 
 # IDE specific files
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS generated files
 .DS_Store
 Thumbs.db
 
+# Uploads and user data
 uploads/
+
+# Test files
+bandit-report.json
