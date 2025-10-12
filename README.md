@@ -54,11 +54,79 @@ By booting all lab systems from a centralized, tamper-proof image, we eliminate 
 ## 🛠️ Installation
 
 ### 📌 Prerequisites
-- Debian-based OS
+- Python 3.8 or higher
+- pip (Python package manager)
+- Debian-based OS (for LTSP server setup)
 - PXE-compatible client systems
 - VirtualBox (for building custom client images)
 
-### 🧱 Setup Steps
+### 🚀 Quick Start with Docker
+
+1. **Clone the repository**
+    ```bash
+    git clone https://github.com/mfscpayload-690/ExamNetShield.git
+    cd ExamNetShield
+    ```
+
+2. **Configure environment**
+    ```bash
+    cp .env.example .env
+    # Edit .env and set your SECRET_KEY and other configurations
+    ```
+
+3. **Run with Docker Compose**
+    ```bash
+    docker-compose up -d
+    ```
+
+4. **Create admin user**
+    ```bash
+    docker-compose exec web python create_user.py
+    ```
+
+5. **Access the application**
+    - Open your browser and navigate to `http://localhost:5000`
+    - Default credentials: username: `sharon`, password: `sharon` (change after first login)
+
+### 🐍 Manual Installation
+
+1. **Clone the repository**
+    ```bash
+    git clone https://github.com/mfscpayload-690/ExamNetShield.git
+    cd ExamNetShield
+    ```
+
+2. **Create virtual environment**
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+
+3. **Install dependencies**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4. **Configure environment**
+    ```bash
+    cp .env.example .env
+    # Edit .env and set your SECRET_KEY and other configurations
+    ```
+
+5. **Initialize database and create admin user**
+    ```bash
+    python create_user.py
+    ```
+
+6. **Run the application**
+    ```bash
+    python app.py
+    ```
+
+7. **Access the application**
+    - Open your browser and navigate to `http://localhost:5000`
+
+### 🖥️ LTSP Server Setup
 
 1. **Install LTSP**
     ```bash
@@ -74,18 +142,59 @@ By booting all lab systems from a centralized, tamper-proof image, we eliminate 
     ltsp image /opt/ltsp/client
     ```
 
-4. **Run Flask Web App**
-    ```bash
-    cd flask-app
-    python app.py
-    ```
-
-5. **Start Monitoring with Epoptes**
+4. **Start Monitoring with Epoptes**
     ```bash
     sudo epoptes
     ```
 
 > Detailed setup instructions available in the [project report](./Major.pdf).
+
+---
+
+## 🧪 Testing
+
+Run the test suite:
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests
+pytest tests/ -v
+
+# Run tests with coverage
+pytest tests/ -v --cov=. --cov-report=html
+
+# View coverage report
+open htmlcov/index.html  # On macOS
+xdg-open htmlcov/index.html  # On Linux
+```
+
+## 🔒 Security
+
+This project implements several security measures:
+- Session management with secure cookies
+- Password hashing using Werkzeug
+- File upload validation and sanitization
+- Path traversal protection
+- Input validation on all forms
+- Logging for audit trails
+
+For security issues, please see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## 🛣️ Roadmap
+
+- [ ] Add multi-language support
+- [ ] Implement real-time proctoring features
+- [ ] Add automated grading system
+- [ ] Support for multiple question types (MCQ, essay, coding)
+- [ ] Export exam results to CSV/PDF
+- [ ] Email notifications for exam events
+- [ ] Two-factor authentication
+- [ ] Mobile-responsive student interface
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
