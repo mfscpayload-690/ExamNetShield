@@ -1,6 +1,6 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort, send_file, safe_join
-from werkzeug.security import check_password_hash
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort, send_file
+from werkzeug.security import check_password_hash, safe_join
 from dotenv import load_dotenv
 from models import *
 from config import config
