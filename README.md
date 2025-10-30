@@ -40,10 +40,10 @@ By booting all lab systems from a centralized, tamper-proof image, we eliminate 
 ## 📸 Screenshots
 
 ### 👨‍🏫 Teacher Dashboard
-![Teacher Dashboard](<img width="1548" height="1198" alt="image" src="https://github.com/user-attachments/assets/7ed5d78e-0b6a-4db7-84c1-4510f2f035c9" />)
+<img width="1548" height="1198" alt="image" src="https://github.com/user-attachments/assets/7ed5d78e-0b6a-4db7-84c1-4510f2f035c9" />
 
 ### 👩‍🎓 Student Exam Interface
-![Student Interface](<img width="1572" height="651" alt="image" src="https://github.com/user-attachments/assets/09a59185-944e-4ebf-b6bf-1ecd8bcffce6" />)
+<img width="1572" height="651" alt="image" src="https://github.com/user-attachments/assets/09a59185-944e-4ebf-b6bf-1ecd8bcffce6" />
 
 
 
