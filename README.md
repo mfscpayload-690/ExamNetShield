@@ -9,8 +9,6 @@ This project proposes a secure, scalable, and centralized framework for conducti
 
 By booting all lab systems from a centralized, tamper-proof image, we eliminate inconsistencies, local vulnerabilities, and manual setup overhead. A custom-built **Flask web app** and **Epoptes** classroom monitoring tool enable full visibility and control throughout the exam lifecycle.
 
-> 🎓 Mini project submitted to **APJ Abdul Kalam Technological University**, 2025.
-
 ---
 
 ## 🚀 Features
@@ -35,17 +33,17 @@ By booting all lab systems from a centralized, tamper-proof image, we eliminate 
 | Backend        | Python, Flask                   |
 | Monitoring     | Epoptes                         |
 | Network Mgmt   | dnsmasq, DHCP, TFTP             |
-| Server OS      | Debian 12 with XFCE             |
+| Server OS      | Fedora 43 with KDE Plasma             |
 
 ---
 
 ## 📸 Screenshots
 
 ### 👨‍🏫 Teacher Dashboard
-![Teacher Dashboard](assets/teacher-dashboard.png)
+![Teacher Dashboard](<img width="1548" height="1198" alt="image" src="https://github.com/user-attachments/assets/7ed5d78e-0b6a-4db7-84c1-4510f2f035c9" />)
 
 ### 👩‍🎓 Student Exam Interface
-![Student Interface](assets/student-interface.png)
+![Student Interface](<img width="1572" height="651" alt="image" src="https://github.com/user-attachments/assets/09a59185-944e-4ebf-b6bf-1ecd8bcffce6" />)
 
 
 
@@ -147,8 +145,6 @@ By booting all lab systems from a centralized, tamper-proof image, we eliminate 
     sudo epoptes
     ```
 
-> Detailed setup instructions available in the [project report](./Major.pdf).
-
 ---
 
 ## 🧪 Testing
@@ -179,7 +175,6 @@ This project implements several security measures:
 - Input validation on all forms
 - Logging for audit trails
 
-For security issues, please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 🛣️ Roadmap
 
@@ -192,16 +187,11 @@ For security issues, please see [CONTRIBUTING.md](CONTRIBUTING.md).
 - [ ] Two-factor authentication
 - [ ] Mobile-responsive student interface
 
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
 ---
 
 ## 🎯 Use Case
 
 This framework is designed for **colleges and schools** that need to conduct **lab-based exams** in a controlled and scalable environment. It guarantees uniformity, secures academic integrity, and streamlines IT management.
-
 
 
 ---
@@ -211,13 +201,3 @@ This framework is designed for **colleges and schools** that need to conduct **l
 This project is licensed under the [MIT License](LICENSE).
 
 ---
-
-## 📬 Contact
-
-**Sharon Aliyas Johnson**  
-📫 [LinkedIn](https://www.linkedin.com/in/sharonaliyas/)  
-🌐 [Portfolio](https://portfolio-8u1t.vercel.app)
-
----
-
-> “Integrity is doing the right thing, even when no one is watching.” — C.S. Lewis
